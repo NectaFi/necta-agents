@@ -43,24 +43,66 @@ export interface PositionData {
 
 // StakeKit specific types
 export interface StakeKitToken {
-	symbol: string
-	priceUSD: string
-}
-
-export interface StakeKitProtocol {
-	name: string
-	apy: number
-	tvl: string
-}
-
-export interface StakeKitBalance {
-	token: StakeKitToken
+	token: {
+		name: string
+		symbol: string
+		decimals: number
+		network: string
+		address?: string
+		logoURI?: string
+		coinGeckoId?: string
+	}
 	amount: string
-	amountUSD: string
-	protocol?: StakeKitProtocol
+	availableYields?: string[]
+}
+
+export interface StakeKitProvider {
+	id: string
+	name: string
+	externalLink: string
+	description: string
+	logoURI: string
+	tvl?: string
+}
+
+export interface StakeKitMetadata {
+	name: string
+	logoURI: string
+	description: string
+	documentation: string
+	provider: StakeKitProvider
+	token: StakeKitToken
+	type: string
 }
 
 export interface StakeKitYield {
-	protocol: StakeKitProtocol
+	id: string
+	token: {
+		name: string
+		symbol: string
+		decimals: number
+		network: string
+		address: string
+		logoURI?: string
+		coinGeckoId?: string
+	}
+	tokens: {
+		name: string
+		symbol: string
+		decimals: number
+		network: string
+		address: string
+		logoURI?: string
+		coinGeckoId?: string
+	}[]
 	apy: number
+	metadata: StakeKitMetadata
+	isAvailable: boolean
+}
+
+export interface StakeKitResponse<T> {
+	data: T
+	hasNextPage: boolean
+	limit: number
+	page: number
 }

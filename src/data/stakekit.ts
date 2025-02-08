@@ -1,91 +1,98 @@
-import type { Hex } from 'viem'
-import env from '../env'
-import { getChainConfig } from '../config/chains'
 import type {
 	AccountBalances,
 	MarketData,
 	PositionData,
-	StakeKitBalance,
+	StakeKitToken,
 	StakeKitYield,
+	StakeKitResponse,
 } from './types'
+import env from '../env'
+import { getChainConfig } from '../config/chains'
 
-const STAKEKIT_API_URL = 'https://api.stakek.it/v1'
+const STAKEKIT_API_URL = 'https://api.stakek.it'
+
+const DEFAULT_HEADERS = {
+	'X-API-KEY': env.STAKEKIT_API_KEY,
+	'Content-Type': 'application/json',
+}
+
+/**
+ * Helper function to make StakeKit API calls with consistent error handling
+ */
+async function fetchStakeKit<T>(endpoint: string, options = {}): Promise<StakeKitResponse<T[]>> {
+	try {
+		const response = await fetch(`${STAKEKIT_API_URL}${endpoint}`, {
+			headers: DEFAULT_HEADERS,
+			...options,
+		})
+
+		if (!response.ok) {
+			console.warn(`StakeKit API error: ${response.status} ${response.statusText}`)
+			return { data: [], hasNextPage: false, limit: 0, page: 0 }
+		}
+
+		return await response.json()
+	} catch (error) {
+		console.error(`Error fetching ${endpoint}:`, error)
+		return { data: [], hasNextPage: false, limit: 0, page: 0 }
+	}
+}
+
+// Helper for filtering USDC tokens
+const isUSDC = (symbol: string) => ['usdc', 'usdbc', 'usdc.e'].includes(symbol.toLowerCase())
 
 /**
  * @dev Gets the balances of an account including yield positions
- * @param owner - The owner of the account
+ * @param chainConfig - The chain configuration
+ * @param owner - The owner address
  * @returns The balances of the account
  */
-export const getAccountBalances = async (owner: Hex): Promise<AccountBalances> => {
-	const chainConfig = getChainConfig(parseInt(env.CHAIN_ID))
-	const url = `${STAKEKIT_API_URL}/tokens/balances`
-
-	const response = await fetch(url, {
+export async function getAccountBalances(
+	chainConfig: { name: string },
+	owner: string
+): Promise<AccountBalances> {
+	const balanceData = await fetchStakeKit<StakeKitToken>('/v1/tokens/balances', {
 		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'X-API-Key': env.STAKEKIT_API_KEY,
-		},
 		body: JSON.stringify({
-			address: owner,
-			chainId: chainConfig.id,
+			addresses: [{ network: chainConfig.name, address: owner }],
 		}),
 	})
 
-	const data = await response.json()
 	return {
-		balances: (data.data || []).map((balance: StakeKitBalance) => ({
-			symbol: balance.token.symbol,
-			balance: balance.amount,
-			balanceUSD: balance.amountUSD,
-			price: balance.token.priceUSD,
-			platform: balance.protocol?.name || 'native',
-			metrics: {
-				apy: balance.protocol?.apy || 0,
-			},
+		balances: (balanceData?.data || []).map((token) => ({
+			symbol: token.token.symbol,
+			balance: token.amount || '0',
+			balanceUSD: '0',
+			price: '0',
+			platform: 'native',
+			metrics: { apy: 0 },
 		})),
 	}
 }
 
 /**
  * @dev Gets the market data for yield opportunities
+ * @param chainConfig - The chain configuration
  * @returns The market data for yield opportunities
  */
-export const getMarketData = async (
-	minApy: number = 3,
-	maxApy: number = 60
-): Promise<MarketData> => {
-	const chainConfig = getChainConfig(parseInt(env.CHAIN_ID))
-	const url = `${STAKEKIT_API_URL}/yields`
+export async function getMarketData(chainConfig: { name: string }): Promise<MarketData> {
+	const data = await fetchStakeKit<StakeKitYield>(
+		`/v2/yields?type=lending&network=${chainConfig.name}`
+	)
 
-	const response = await fetch(url, {
-		method: 'GET',
-		headers: {
-			'Content-Type': 'application/json',
-			'X-API-Key': env.STAKEKIT_API_KEY,
-		},
-	})
+	const usdcYields = (data?.data || [])
+		.filter((yieldData) => isUSDC(yieldData.token?.symbol || ''))
+		.sort((a, b) => b.apy - a.apy)
+		.map((yieldData) => ({
+			name: `${yieldData.metadata.provider.name} ${yieldData.token.symbol}`,
+			metrics: {
+				apy: yieldData.apy * 100,
+				volumeUsd1d: yieldData.metadata.provider.tvl || '0',
+				volumeUsd7d: yieldData.metadata.provider.tvl || '0',
+			},
+		}))
 
-	const data = await response.json()
-	return {
-		usdc: {
-			tokens: (data.data || [])
-				.filter(
-					(yieldData: StakeKitYield) =>
-						yieldData.apy >= minApy &&
-						yieldData.apy <= maxApy &&
-						yieldData.protocol.name.toLowerCase().includes('usdc')
-				)
-				.map((yieldData: StakeKitYield) => ({
-					name: yieldData.protocol.name,
-					metrics: {
-						apy: yieldData.apy,
-						volumeUsd1d: yieldData.protocol.tvl,
-						volumeUsd7d: yieldData.protocol.tvl,
-					},
-				})),
-		},
-	}
+	return { usdc: { tokens: usdcYields } }
 }
 
 /**
@@ -96,46 +103,39 @@ export const getMarketData = async (
  * @param maxApy - Maximum APY threshold
  * @returns The market data for the specified positions
  */
-export const getPositionData = async (
+export async function getPositionData(
 	queries: Array<{ protocol: string; token: string }>,
 	minLiquidity: number = 10000000,
 	minApy: number = 3,
 	maxApy: number = 60
-): Promise<PositionData[]> => {
+): Promise<PositionData[]> {
 	const chainConfig = getChainConfig(parseInt(env.CHAIN_ID))
 
 	const results = await Promise.all(
 		queries.map(async ({ protocol, token }) => {
-			const url = `${STAKEKIT_API_URL}/yields`
+			const data = await fetchStakeKit<StakeKitYield>(
+				`/v2/yields?type=lending&network=${chainConfig.name}`
+			)
 
-			const response = await fetch(url, {
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-API-Key': env.STAKEKIT_API_KEY,
-				},
-			})
-
-			const data = await response.json()
 			return {
 				protocol,
 				token,
-				data: (data.data || [])
+				data: (data?.data || [])
 					.filter(
-						(yieldData: StakeKitYield) =>
-							yieldData.apy >= minApy &&
-							yieldData.apy <= maxApy &&
-							yieldData.protocol.name
+						(yieldData) =>
+							yieldData.apy >= minApy / 100 &&
+							yieldData.apy <= maxApy / 100 &&
+							yieldData.metadata.provider.name
 								.toLowerCase()
 								.includes(protocol.toLowerCase()) &&
-							yieldData.protocol.name.toLowerCase().includes(token.toLowerCase())
+							yieldData.token.symbol.toLowerCase().includes(token.toLowerCase())
 					)
-					.map((yieldData: StakeKitYield) => ({
-						name: yieldData.protocol.name,
+					.map((yieldData) => ({
+						name: yieldData.metadata.provider.name,
 						metrics: {
-							apy: yieldData.apy,
-							volumeUsd1d: yieldData.protocol.tvl,
-							volumeUsd7d: yieldData.protocol.tvl,
+							apy: yieldData.apy * 100,
+							volumeUsd1d: yieldData.metadata.provider.tvl || '0',
+							volumeUsd7d: yieldData.metadata.provider.tvl || '0',
 						},
 					})),
 			}
