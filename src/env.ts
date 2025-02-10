@@ -18,6 +18,10 @@ export const envSchema = z.object({
 		.refine((val) => validateChainId(parseInt(val)), 'Chain ID not supported or not enabled'),
 	CHAIN_NAME: z.string().default('base'),
 	MODEL_NAME: z.string().default('gpt-4o-2024-08-06'),
+	ENABLE_AGENTS: z
+		.string()
+		.default('false')
+		.transform((val) => val === 'true'),
 })
 
 export const env = envSchema.parse(process.env)
