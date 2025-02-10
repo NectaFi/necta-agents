@@ -1,0 +1,12 @@
+[build]
+builder = "nixpacks"
+buildCommand = "bun install"
+
+[deploy]
+startCommand = "bun run start"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+
+[nixpacks]
+nodejs-version = "20"
