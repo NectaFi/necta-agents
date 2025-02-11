@@ -9,8 +9,15 @@ import {
 import { cache } from 'hono/cache'
 import { privateKeyToAccount } from 'viem/accounts'
 import env from '../../env'
+import { getChainConfig } from '../../config/chains'
 
 const walletRouter = new Hono()
+
+walletRouter.get('/balances/:address', async (c) => {
+	const chainConfig = getChainConfig(parseInt(env.CHAIN_ID))
+	const address = c.req.param('address')
+	return c.json(await getAccountBalances(chainConfig, address))
+})
 
 walletRouter.get(
 	'/',
@@ -19,8 +26,8 @@ walletRouter.get(
 		cacheControl: 'max-age=36000',
 	}),
 	async (c) => {
+		const chainConfig = getChainConfig(parseInt(env.CHAIN_ID))
 		const account = privateKeyToAccount(env.PRIVATE_KEY as `0x${string}`)
-
 		const period = c.req.query('period') || 'month'
 
 		const [chart, portfolio, transactions, positions, wallet] = await Promise.all([
@@ -28,7 +35,7 @@ walletRouter.get(
 			getWalletPortfolio(account.address),
 			getWalletTransactions(account.address),
 			getWalletFungiblePositions(account.address),
-			getAccountBalances(account.address),
+			getAccountBalances(chainConfig, account.address),
 		])
 
 		// Transform data to match frontend schema

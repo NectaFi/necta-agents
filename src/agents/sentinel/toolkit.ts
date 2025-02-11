@@ -3,8 +3,12 @@ import type { Hex } from 'viem'
 import { getAccountBalances, getMarketData } from '../../data'
 import { z } from 'zod'
 import { retrievePastReports } from '../../memory'
+import { getChainConfig } from '../../config/chains'
+import env from '../../env'
 
 export const getSentinelToolkit = (address: Hex) => {
+	const chainConfig = getChainConfig(parseInt(env.CHAIN_ID))
+
 	return {
 		getPastReports: tool({
 			description:
@@ -41,7 +45,7 @@ export const getSentinelToolkit = (address: Hex) => {
 			execute: async () => {
 				console.log('======== getWalletBalances Tool =========')
 				console.log(`[getWalletBalances] fetching token balances for ${address}...`)
-				const { balances } = await getAccountBalances(address)
+				const { balances } = await getAccountBalances(chainConfig, address)
 
 				const tokenBalances = balances
 					.filter(
@@ -79,7 +83,7 @@ export const getSentinelToolkit = (address: Hex) => {
 			execute: async () => {
 				console.log('======== getMarketData Tool =========')
 				console.log(`[getMarketData] fetching market data...`)
-				const marketData = await getMarketData()
+				const marketData = await getMarketData(chainConfig)
 
 				const formatTokens = (data: any) => {
 					if (!data?.tokens || data.tokens.length === 0) {

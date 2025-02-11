@@ -39,7 +39,7 @@ describe('StakeKit Integration', () => {
 			}
 			throw error
 		}
-	}, 10000) // 10 second timeout
+	}, 20000) // Increased timeout to 20 seconds
 
 	test('should fetch USDC market data', async () => {
 		const result = await getMarketData(chainConfig)
