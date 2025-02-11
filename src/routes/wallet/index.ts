@@ -31,13 +31,30 @@ walletRouter.get(
 			getAccountBalances(account.address),
 		])
 
+		// Transform data to match frontend schema
+		const tokens =
+			positions?.data?.map((token: any) => ({
+				symbol: token.asset.symbol,
+				balance: token.quantity,
+				value: token.value.toString(),
+			})) || []
+
+		const defiPositions =
+			portfolio?.data?.positions?.map((pos: any) => ({
+				protocol: pos.protocol.name,
+				amount: pos.quantity,
+				value: pos.value.toString(),
+			})) || []
+
 		return c.json({
 			address: account.address,
-			wallet,
-			chart,
-			portfolio,
-			transactions,
-			positions,
+			balance: positions?.data?.[0]?.quantity || '0',
+			totalBalance: positions?.meta?.total_value?.toString() || '0',
+			totalValue: parseFloat(positions?.meta?.total_value || '0'),
+			averageApy: wallet?.balances?.[0]?.metrics?.apy || 0,
+			riskScore: 2, // TODO: Implement risk scoring
+			tokens,
+			positions: defiPositions,
 		})
 	}
 )

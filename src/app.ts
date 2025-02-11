@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { logger } from 'hono/logger'
 import type { Environment } from './env'
 import { thoughtsRouter, walletRouter } from './routes'
+import { agentsRouter } from './routes/agents'
 import { cors } from 'hono/cors'
 
 const app = new Hono<Environment>()
@@ -20,5 +21,6 @@ app.get('/health', (c) => c.json({ status: 'ok' }))
 
 app.route('/thoughts', thoughtsRouter)
 app.route('/wallet', walletRouter)
+app.route('/agents', agentsRouter)
 
 export { app }
