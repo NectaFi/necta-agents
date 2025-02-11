@@ -6,7 +6,13 @@ import { cors } from 'hono/cors'
 
 const app = new Hono<Environment>()
 
-app.use(cors({ origin: '*' }))
+app.use(
+	cors({
+		origin: ['https://nectafi.xyz', 'http://localhost:3000'],
+		credentials: true,
+	})
+)
+
 app.use(logger())
 
 // Health check endpoint for Railway
