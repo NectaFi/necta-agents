@@ -21,54 +21,43 @@ export const getTransactionDataTool = (account: Account) =>
 				})
 			),
 		}),
-		execute: async ({ tasks }: { tasks: { task: string; taskId: string | null }[] }) => {
+		execute: async ({ tasks }) => {
 			console.log('======== getTransactionData Tool =========')
-			console.log(`[getTransactionData] fetching transactions data from Brian`)
+			const consoleKit = new ConsoleKitService()
+
 			const transactions = await Promise.all(
-				tasks.map(async ({ task, taskId }: { task: string; taskId: string | null }) => {
-					console.log(
-						`[getTransactionData] fetching transaction data for task: "${task}"`
-					)
+				tasks.map(async ({ task, taskId }) => {
+					console.log(`[getTransactionData] Building transaction for task: "${task}"`)
 					try {
-						const brianResponse = await fetch(
-							`${
-								env.BRIAN_API_URL ||
-								'https://staging-api.brianknows.org/api/v0/agent/transaction'
-							}`,
-							{
-								method: 'POST',
-								body: JSON.stringify({
-									prompt: task,
-									chainId: env.CHAIN_ID,
-									address: account.address,
-								}),
-								headers: {
-									'Content-Type': 'application/json',
-									'x-brian-api-key': env.BRIAN_API_KEY,
-								},
-							}
+						// Parse task to get amount and action
+						const match = task.match(
+							/(?:Swap|Deposit|Withdraw)\s+(\d+)\s+(\w+)(?:\s+(?:for|into|from)\s+(\w+))?/
 						)
+						if (!match) return null
 
-						const { result } = await brianResponse.json()
+						const [_, amount, token, target] = match
+						const type = task.toLowerCase().startsWith('swap')
+							? 'SWAP'
+							: task.toLowerCase().startsWith('deposit')
+							? 'DEPOSIT'
+							: 'WITHDRAW'
 
-						if (!result) {
-							return null
-						}
-
-						const data = result[0].data
-						console.log(`[getTransactionData] Brian says: ${data.description}`)
-						const steps = data.steps
+						const txResponse = await consoleKit.buildTransaction({
+							accountAddress: account.address,
+							type,
+							protocol: target?.toLowerCase() || '',
+							token: token.toLowerCase(),
+							amount,
+						})
 
 						return {
 							task,
-							steps,
 							taskId,
-							fromToken: data.fromToken,
-							fromAmountUSD: `$${data.fromAmountUSD}`,
-							toToken: data.toToken,
-							toAmountUSD: `$${data.toAmountUSD}`,
-							fromAmount: formatUnits(data.fromAmount, data.fromToken.decimals),
-							outputAmount: formatUnits(data.toAmountMin, data.toToken.decimals),
+							steps: txResponse.transactions,
+							fromToken: { symbol: token, decimals: 6 },
+							toToken: { symbol: target || token, decimals: target ? 18 : 6 },
+							fromAmount: amount,
+							outputAmount: amount, // ConsoleKit handles the actual amounts
 						}
 					} catch (error) {
 						console.error(error)
@@ -78,12 +67,12 @@ export const getTransactionDataTool = (account: Account) =>
 			)
 
 			if (transactions.length !== tasks.length) {
-				return `Some transactions failed to fetch, please rewrite the tasks.`
+				return `Some transactions failed to build, please rewrite the tasks.`
 			}
 
-			const validTransactions = transactions.filter((transaction) => transaction !== null)
-
+			const validTransactions = transactions.filter((tx) => tx !== null)
 			const taskIds: any[] = []
+
 			for (const transaction of validTransactions) {
 				if (transaction.taskId) {
 					const { data: taskData } = await updateTask(
@@ -117,8 +106,7 @@ export const getTransactionDataTool = (account: Account) =>
 				}
 			}
 
-			console.log(`[getTransactionData] transactions fetched correctly.`)
-
+			console.log(`[getTransactionData] transactions built correctly.`)
 			return taskIds
 		},
 	})
@@ -303,6 +291,41 @@ export const getExecutorToolkit = (account: Account) => {
 						throw new Error('No transactions returned from ConsoleKit')
 					}
 
+					// Create public client for simulation
+					const publicClient = createPublicClient({
+						chain: getChain(parseInt(env.CHAIN_ID)),
+						transport: http(),
+					})
+
+					// Simulate transaction before execution
+					const tx = txResponse.transactions[0]
+					console.log(`[executeYieldTransaction] Simulating transaction to: ${tx.to}`)
+
+					try {
+						// Estimate gas first
+						const gasEstimate = await publicClient.estimateGas({
+							account: account.address as `0x${string}`,
+							to: tx.to,
+							value: BigInt(tx.value || '0'),
+							data: tx.data as `0x${string}`,
+						})
+
+						console.log(`[executeYieldTransaction] Estimated gas: ${gasEstimate}`)
+
+						// Then simulate the full transaction
+						await publicClient.call({
+							account: account.address as `0x${string}`,
+							to: tx.to,
+							value: BigInt(tx.value || '0'),
+							data: tx.data as `0x${string}`,
+						})
+
+						console.log(`[executeYieldTransaction] Simulation successful`)
+					} catch (simError: any) {
+						console.error('Transaction simulation failed:', simError)
+						return `Failed to simulate transaction: ${simError.message}. Please verify the protocol and amount.`
+					}
+
 					// Store task in memory with ConsoleKit data
 					const { data: taskData } = await storeTask(
 						task,
@@ -322,7 +345,6 @@ export const getExecutorToolkit = (account: Account) => {
 						transport: http(),
 					})
 
-					const tx = txResponse.transactions[0]
 					console.log(`[executeYieldTransaction] Executing transaction to: ${tx.to}`)
 
 					// Execute transaction

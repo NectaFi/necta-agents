@@ -44,6 +44,15 @@ export class ConsoleKitService {
 			throw new Error('CONSOLE_KIT_API_KEY is required')
 		}
 
+		// Validate chain - only mainnet chains are supported
+		const chainId = parseInt(env.CHAIN_ID)
+		if (chainId !== 8453 && chainId !== 42161) {
+			// Base and Arbitrum mainnet only
+			throw new Error(
+				'ConsoleKit only supports Base and Arbitrum mainnets. Testnets are not supported.'
+			)
+		}
+
 		// Initialize ConsoleKit with API key and base URL from environment
 		this.consoleKit = new ConsoleKit(env.CONSOLE_KIT_API_KEY, env.CONSOLE_BASE_URL)
 
@@ -56,36 +65,63 @@ export class ConsoleKitService {
 		if (env.EXECUTOR_REGISTRY_ID) {
 			this.registryId = env.EXECUTOR_REGISTRY_ID
 			console.log('[ConsoleKit] Using existing registry ID:', this.registryId)
+		} else {
+			// Auto-register executor if no registry ID is set
+			console.log('[ConsoleKit] No registry ID found, attempting auto-registration...')
+			console.log('[ConsoleKit] Note: Registration is gasless')
+			this.autoRegisterExecutor().catch((error) => {
+				console.error('[ConsoleKit] Auto-registration failed:', error.message)
+				if (error.message.includes('invalid chain id')) {
+					console.error(
+						'[ConsoleKit] Make sure you are using a supported mainnet chain (Base or Arbitrum)'
+					)
+				}
+				throw error
+			})
 		}
 	}
 
 	/**
-	 * Register executor with Console and Kernel
-	 * This is required before any execution can take place
+	 * Automatically register executor with default configuration
 	 */
-	async registerExecutor(
-		executorConfig: ConsoleExecutorConfig,
-		executorMetadata: ExecutorMetadata
-	) {
+	private async autoRegisterExecutor() {
 		try {
 			const { chainId: chainIdBig } = await this.provider.getNetwork()
 			const chainId = parseInt(chainIdBig.toString(), 10)
 
-			// Get the registration message to sign
+			console.log('[ConsoleKit] Registering executor on chain:', chainId)
+
+			const executorConfig: ConsoleExecutorConfig = {
+				clientId: env.EXECUTOR_CLIENT_ID,
+				executor: this.executorWallet.address as `0x${string}`,
+				feeReceiver: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+				hopAddresses: ['0xAE75B29ADe678372D77A8B41225654138a7E6ff1'] as `0x${string}`[],
+				inputTokens: ['0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'] as `0x${string}`[],
+				limitPerExecution: true,
+				timestamp: new Date().getTime(),
+			}
+
+			const executorMetadata = {
+				name: 'necta-executor',
+				logo: '',
+				metadata: {},
+			}
+
+			console.log('[ConsoleKit] Generating registration message...')
 			const { domain, message, types } =
 				await this.consoleKit.automationContext.generateConsoleExecutorRegistration712Message(
 					chainId,
 					executorConfig
 				)
 
-			// Sign the registration message
+			console.log('[ConsoleKit] Signing registration message...')
 			const executorRegistrationSignature = await this.executorWallet._signTypedData(
 				domain,
 				types,
 				message
 			)
 
-			// Register executor with Console
+			console.log('[ConsoleKit] Registering with Console...')
 			const executorData = await this.consoleKit.automationContext.registerExecutorOnConsole(
 				executorRegistrationSignature,
 				chainId,
@@ -96,20 +132,20 @@ export class ConsoleKitService {
 			)
 
 			if (!executorData) {
-				throw new Error('Failed to register executor on console')
+				throw new Error('Failed to register executor on console - no data returned')
 			}
 
 			this.registryId = executorData.id
 			console.log('[ConsoleKit] Executor registered with ID:', this.registryId)
 
-			// Register executor with Kernel
+			// Register with Kernel
 			const kernelConfig: KernelExecutorConfig = {
 				defaultEvery: '120s',
 				executionTTL: '120s',
 				type: 'INTERVAL',
 			}
 
-			// Get the kernel registration message to sign
+			console.log('[ConsoleKit] Generating kernel registration message...')
 			const kernelMessage =
 				await this.consoleKit.automationContext.generateKernelExecutorRegistration712Message(
 					chainId,
@@ -117,24 +153,24 @@ export class ConsoleKitService {
 					kernelConfig
 				)
 
-			// Sign the kernel registration message
+			console.log('[ConsoleKit] Signing kernel registration message...')
 			const kernelRegistrationSignature = await this.executorWallet._signTypedData(
 				kernelMessage.domain,
 				kernelMessage.types,
 				kernelMessage.message
 			)
 
-			// Register with kernel
+			console.log('[ConsoleKit] Registering with kernel...')
 			await this.consoleKit.automationContext.registerExecutorOnKernel(
 				this.registryId,
 				kernelRegistrationSignature,
 				kernelConfig
 			)
 
-			console.log('[ConsoleKit] Executor registered with Kernel')
+			console.log('[ConsoleKit] Executor successfully registered with Kernel')
 			return executorData
 		} catch (error) {
-			console.error('[ConsoleKit] Failed to register executor:', error)
+			console.error('[ConsoleKit] Registration error:', error)
 			throw error
 		}
 	}
@@ -149,75 +185,30 @@ export class ConsoleKitService {
 		token: string
 		amount: string
 	}): Promise<ConsoleTransactionResponse> {
-		try {
-			const { chainId: chainIdBig } = await this.provider.getNetwork()
-			const chainId = parseInt(chainIdBig.toString(), 10)
+		const { chainId: chainIdBig } = await this.provider.getNetwork()
+		const chainId = parseInt(chainIdBig.toString(), 10)
 
-			let response: any
-
-			switch (params.type) {
-				case 'DEPOSIT':
-				case 'WITHDRAW':
-					// Use send for deposits and withdrawals
-					response = await this.consoleKit.coreActions.send(
-						chainId,
-						params.accountAddress as `0x${string}`,
-						{
-							to: params.protocol as `0x${string}`, // Protocol address
-							tokenAddress: params.token as `0x${string}`, // Token contract address
-							amount: params.amount,
-						}
-					)
-					break
-				case 'SWAP':
-					// For swap, we need additional parameters like tokenOut and slippage
-					// First get swap routes
-					const routes = await this.consoleKit.coreActions.getSwapRoutes(
-						params.token as `0x${string}`, // tokenIn address
-						params.protocol as `0x${string}`, // tokenOut address
-						params.accountAddress as `0x${string}`,
-						params.amount,
-						'1', // 1% slippage
-						chainId
-					)
-
-					if (!routes.data.length) {
-						throw new Error('No swap routes found')
-					}
-
-					// Use the first route
-					response = await this.consoleKit.coreActions.swap(
-						chainId,
-						params.accountAddress as `0x${string}`,
-						{
-							tokenIn: params.token as `0x${string}`,
-							tokenOut: params.protocol as `0x${string}`,
-							amountIn: params.amount,
-							slippage: 1,
-							chainId,
-							route: routes.data[0],
-						}
-					)
-					break
-				default:
-					throw new Error(`Unsupported transaction type: ${params.type}`)
+		// Use ConsoleKit's core actions for transaction building
+		const response = await this.consoleKit.coreActions.send(
+			chainId,
+			params.accountAddress as `0x${string}`,
+			{
+				to: params.protocol.toLowerCase() as `0x${string}`,
+				tokenAddress: params.token.toLowerCase() as `0x${string}`,
+				amount: params.amount,
 			}
+		)
 
-			// Transform response to match ConsoleTransactionResponse type
-			return {
-				transactions: [
-					{
-						to: response.data.transactions[0].to,
-						data: response.data.transactions[0].data,
-						value: response.data.transactions[0].value || '0',
-						operation: 0,
-					},
-				],
-				metadata: response.data.metadata || {},
-			}
-		} catch (error) {
-			console.error('[ConsoleKit] Failed to build transaction:', error)
-			throw error
+		return {
+			transactions: [
+				{
+					to: response.data.transactions[0].to as `0x${string}`,
+					data: response.data.transactions[0].data as `0x${string}`,
+					value: response.data.transactions[0].value || '0',
+					operation: 0,
+				},
+			],
+			metadata: response.data.metadata || {},
 		}
 	}
 
@@ -225,55 +216,11 @@ export class ConsoleKitService {
 	 * Execute a transaction using ConsoleKit
 	 */
 	async executeTransaction(transactionHash: `0x${string}`) {
-		try {
-			const { chainId: chainIdBig } = await this.provider.getNetwork()
-			const chainId = parseInt(chainIdBig.toString(), 10)
+		const { chainId: chainIdBig } = await this.provider.getNetwork()
+		const chainId = parseInt(chainIdBig.toString(), 10)
 
-			await this.consoleKit.coreActions.indexTransaction(transactionHash, chainId)
-			console.log('[ConsoleKit] Transaction indexed:', transactionHash)
-		} catch (error) {
-			console.error('[ConsoleKit] Failed to execute transaction:', error)
-			throw error
-		}
-	}
-
-	/**
-	 * Fetch pending tasks from Kernel
-	 * @param cursor Pagination cursor
-	 * @param limit Number of tasks to fetch
-	 */
-	async fetchTasks(cursor: number = 0, limit: number = 10) {
-		if (!this.registryId) {
-			throw new Error('Executor not registered')
-		}
-
-		try {
-			return await this.consoleKit.automationContext.fetchTasks(
-				this.registryId,
-				cursor,
-				limit
-			)
-		} catch (error) {
-			console.error('[ConsoleKit] Failed to fetch tasks:', error)
-			throw error
-		}
-	}
-
-	/**
-	 * Submit a task to Kernel
-	 * @param taskRequest Task request parameters
-	 */
-	async submitTask(taskRequest: any) {
-		if (!this.registryId) {
-			throw new Error('Executor not registered')
-		}
-
-		try {
-			return await this.consoleKit.automationContext.submitTask(taskRequest)
-		} catch (error) {
-			console.error('[ConsoleKit] Failed to submit task:', error)
-			throw error
-		}
+		await this.consoleKit.coreActions.indexTransaction(transactionHash, chainId)
+		console.log('[ConsoleKit] Transaction indexed:', transactionHash)
 	}
 
 	/**

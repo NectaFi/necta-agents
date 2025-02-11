@@ -22,47 +22,46 @@ The system consists of three main agents:
 
 ## Setup
 
-1. Clone the repository:
-
-```bash
-git clone https://github.com/your-username/necta-agents.git
-cd necta-agents
-```
-
-2. Install dependencies:
+1. Install dependencies:
 
 ```bash
 bun install
 ```
 
-3. Copy environment example:
+2. Set up environment variables:
 
 ```bash
 cp .env.example .env
 ```
 
-4. Configure your environment variables in `.env`
+Fill in the required API keys and configuration.
 
-5. Run the development server:
-
-```bash
-bun src/index.ts
-```
-
-## Development
-
-The project uses:
-
--   TypeScript for type safety
--   Zod for runtime validation
--   Bun as the runtime
--   Hono for API routing
--   Viem for blockchain interactions
-
-## Testing
-
-Run the test suite:
+3. Register Executor (Gasless):
 
 ```bash
-bun test
+ENABLE_AGENTS=true bun src/index.ts
 ```
+
+This will register your executor with ConsoleKit. The registration is gasless.
+
+4. Create Brahma Account (Manual Steps):
+
+    1. Visit https://dev.console.fi
+    2. Connect your wallet (same as executor wallet)
+    3. Create a new Brahma account
+    4. Create a subscription with your registered executor
+    5. Fund the account with at least 1 USDC for testing
+
+5. Add your Brahma account address to `.env`:
+
+```
+BRAHMA_ACCOUNT_ADDRESS="0x..."
+```
+
+## Important Notes
+
+-   Executor registration is completely gasless
+-   Brahma account deployment requires funds
+-   Keep at least 1 USDC in the Brahma account for testing
+-   All funds in the Brahma account remain fully owned by you
+-   Transaction relaying for automations is currently free

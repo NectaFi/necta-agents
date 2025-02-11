@@ -8,6 +8,8 @@ import type {
 } from './types'
 import env from '../env'
 import { getChainConfig } from '../config/chains'
+import { createPublicClient, http, formatEther } from 'viem'
+import { arbitrum, base } from 'viem/chains'
 
 const STAKEKIT_API_URL = 'https://api.stakek.it'
 
@@ -51,6 +53,18 @@ export async function getAccountBalances(
 	chainConfig: { name: string },
 	owner: string
 ): Promise<AccountBalances> {
+	// Get native ETH balance for gas
+	const chain = chainConfig.name === 'arbitrum' ? arbitrum : base
+	const publicClient = createPublicClient({
+		chain,
+		transport: http(),
+	})
+
+	const ethBalance = await publicClient.getBalance({
+		address: owner as `0x${string}`,
+	})
+
+	// Get token balances from StakeKit
 	const balanceData = await fetchStakeKit<StakeKitToken>('/v1/tokens/balances', {
 		method: 'POST',
 		body: JSON.stringify({
@@ -58,15 +72,47 @@ export async function getAccountBalances(
 		}),
 	})
 
-	return {
-		balances: (balanceData?.data || []).map((token) => ({
+	// Filter and prioritize USDC balances
+	const usdcBalances = (balanceData?.data || [])
+		.filter((token) => isUSDC(token.token.symbol))
+		.map((token) => ({
 			symbol: token.token.symbol,
 			balance: token.amount || '0',
-			balanceUSD: '0',
+			balanceUSD: '0', // StakeKit doesn't provide USD values
 			price: '0',
-			platform: 'native',
-			metrics: { apy: 0 },
-		})),
+			platform: 'basic',
+			metrics: {
+				apy: 0,
+			},
+		}))
+
+	return {
+		balances: [
+			// Add USDC balances first
+			...usdcBalances,
+			// Add ETH balance for gas
+			{
+				symbol: 'ETH',
+				balance: formatEther(ethBalance),
+				balanceUSD: '0',
+				price: '0',
+				platform: 'native',
+				metrics: { apy: 0 },
+			},
+			// Add other token balances
+			...(balanceData?.data || [])
+				.filter((token) => !isUSDC(token.token.symbol))
+				.map((token) => ({
+					symbol: token.token.symbol,
+					balance: token.amount || '0',
+					balanceUSD: '0',
+					price: '0',
+					platform: 'basic',
+					metrics: {
+						apy: 0,
+					},
+				})),
+		],
 	}
 }
 
