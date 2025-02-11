@@ -22,6 +22,11 @@ export const envSchema = z.object({
 		.string()
 		.default('false')
 		.transform((val) => val === 'true'),
+	CONSOLE_KIT_API_KEY: z.string(),
+	// ConsoleKit specific variables
+	EXECUTOR_CLIENT_ID: z.string().default('necta-executor'),
+	EXECUTOR_REGISTRY_ID: z.string().optional(), // Will be set after registration
+	CONSOLE_BASE_URL: z.string().default('https://dev.console.fi/v1/vendor'),
 })
 
 export const env = envSchema.parse(process.env)
