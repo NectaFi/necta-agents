@@ -7,10 +7,7 @@ export const envSchema = z.object({
 	SUPABASE_KEY: z.string(),
 	PRIVATE_KEY: z.string(),
 	ZERION_API_KEY: z.string(),
-	BRIAN_API_KEY: z.string(),
-	PORTALS_API_KEY: z.string(),
 	OPENAI_API_KEY: z.string(),
-	BRIAN_API_URL: z.string().default('https://staging-api.brianknows.org'),
 	STAKEKIT_API_KEY: z.string(),
 	CHAIN_ID: z
 		.string()
