@@ -1,6 +1,11 @@
 import { app } from './app'
 import env from './env'
-import { sentinelAgent, account } from './setup'
+import { sentinelAgent, account, consoleKit } from './setup'
+
+// Check ConsoleKit initialization
+if (!consoleKit.isRegistered()) {
+	console.log(`[⚠️] ConsoleKit executor not registered. Please run registration script first.`)
+}
 
 // Only start agents if explicitly enabled
 if (env.ENABLE_AGENTS) {
@@ -11,7 +16,7 @@ if (env.ENABLE_AGENTS) {
 }
 
 // Export the agent for use in API routes
-export { sentinelAgent, account }
+export { sentinelAgent, account, consoleKit }
 
 // Only export the Hono app
 export default {

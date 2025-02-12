@@ -26,9 +26,6 @@ const chainConfigSchema = z.object({
 	enabled: z.boolean(), // Controls availability in UI and validation
 	minLiquidity: z.number(),
 	minEthBalance: z.string(),
-	portals: z.object({
-		networkId: z.string(),
-	}),
 })
 
 export type ChainConfig = z.infer<typeof chainConfigSchema>
@@ -45,9 +42,6 @@ export const SUPPORTED_CHAINS: Record<number, ChainConfig> = {
 		enabled: true,
 		minLiquidity: 10_000_000,
 		minEthBalance: '0.002',
-		portals: {
-			networkId: 'base',
-		},
 	},
 	42161: {
 		id: 42161,
@@ -56,9 +50,6 @@ export const SUPPORTED_CHAINS: Record<number, ChainConfig> = {
 		enabled: true,
 		minLiquidity: 10_000_000,
 		minEthBalance: '0.002',
-		portals: {
-			networkId: 'arbitrum',
-		},
 	},
 }
 

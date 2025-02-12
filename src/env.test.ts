@@ -10,7 +10,8 @@ describe('Environment Configuration', () => {
 			// Add other required env vars
 			SUPABASE_URL: 'test',
 			SUPABASE_KEY: 'test',
-			PRIVATE_KEY: 'test',
+			EXECUTOR_EOA_PRIVATE_KEY: 'test',
+			USER_EOA_PRIVATE_KEY: 'test',
 			ZERION_API_KEY: 'test',
 			BRIAN_API_KEY: 'test',
 			PORTALS_API_KEY: 'test',
@@ -28,7 +29,8 @@ describe('Environment Configuration', () => {
 			// Add other required env vars
 			SUPABASE_URL: 'test',
 			SUPABASE_KEY: 'test',
-			PRIVATE_KEY: 'test',
+			EXECUTOR_EOA_PRIVATE_KEY: 'test',
+			USER_EOA_PRIVATE_KEY: 'test',
 			ZERION_API_KEY: 'test',
 			BRIAN_API_KEY: 'test',
 			PORTALS_API_KEY: 'test',
