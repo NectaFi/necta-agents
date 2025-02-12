@@ -7,7 +7,7 @@ import { deleteTask, retrieveTaskById, retrieveTasks, storeTask, updateTask } fr
 import { createPublicClient, createWalletClient, formatUnits, http } from 'viem'
 import { getChain } from '../../utils/chain'
 import { getMarketData, getPositionData } from '../../data'
-import { ConsoleKitService } from '../../services/console-kit'
+import { ConsoleKitService } from '../../services/console-kit/index'
 import { getChainConfig } from '../../config/chains'
 
 export const getTransactionDataTool = (account: Account) =>

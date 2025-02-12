@@ -27,7 +27,7 @@ walletRouter.get(
 	}),
 	async (c) => {
 		const chainConfig = getChainConfig(parseInt(env.CHAIN_ID))
-		const account = privateKeyToAccount(env.PRIVATE_KEY as `0x${string}`)
+		const account = privateKeyToAccount(env.EXECUTOR_EOA_PRIVATE_KEY as `0x${string}`)
 		const period = c.req.query('period') || 'month'
 
 		const [chart, portfolio, transactions, positions, wallet] = await Promise.all([

@@ -4,7 +4,7 @@ import env from '../env'
 import { getChainConfig } from '../config/chains'
 
 // Test wallet address from our env
-const TEST_ADDRESS = env.PRIVATE_KEY as `0x${string}`
+const TEST_ADDRESS = env.EXECUTOR_EOA_PRIVATE_KEY as `0x${string}`
 const chainConfig = getChainConfig(parseInt(env.CHAIN_ID))
 
 describe('StakeKit Integration', () => {
