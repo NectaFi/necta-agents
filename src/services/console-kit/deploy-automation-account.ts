@@ -2,6 +2,92 @@ import { ConsoleKit } from 'brahma-console-kit'
 import type { PreComputedAddressData, TaskStatusData, Address } from 'brahma-console-kit'
 import { ethers } from 'ethers'
 import { poll } from './utils'
+import env from '../../env'
+
+const AutomationSubscriptionParams = {
+	inputToken: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address, // Base USDC
+	inputAmount: BigInt(1000000), // 1 USDC
+	inputTokenPerIterationLimit: BigInt(200000), // 0.2 USDC per iteration
+	duration: 0,
+	metadata: {
+		every: '120s',
+		receiver: '0xAE75B29ADe678372D77A8B41225654138a7E6ff1',
+		transferAmount: '200000',
+	},
+}
+
+async function main() {
+	console.log('[Deploy] Starting Brahma account deployment...')
+
+	if (!env.USER_EOA_PRIVATE_KEY) {
+		throw new Error('USER_EOA_PRIVATE_KEY is required')
+	}
+
+	if (!env.EXECUTOR_REGISTRY_ID) {
+		throw new Error('EXECUTOR_REGISTRY_ID is required')
+	}
+
+	const consoleKit = new ConsoleKit(env.CONSOLE_API_KEY, env.CONSOLE_BASE_URL)
+	const provider = new ethers.JsonRpcProvider(env.JSON_RPC_URL)
+	const userWallet = new ethers.Wallet(env.USER_EOA_PRIVATE_KEY.replace('0x', ''), provider)
+	const userEoaAddress = userWallet.address as Address
+
+	console.log('[Deploy] Using user address:', userEoaAddress)
+	console.log('[Deploy] Using executor registry:', env.EXECUTOR_REGISTRY_ID)
+
+	try {
+		// 1. Setup precompute balances
+		console.log('[Deploy] Setting up precompute balances...')
+		const precomputeData = await setupPrecomputeBalances(
+			consoleKit,
+			provider,
+			userWallet,
+			userEoaAddress,
+			parseInt(env.CHAIN_ID),
+			AutomationSubscriptionParams.inputToken,
+			AutomationSubscriptionParams.inputAmount
+		)
+
+		console.log('[Deploy] Precompute setup complete')
+
+		// 2. Deploy automation account
+		console.log('[Deploy] Deploying automation account...')
+		const { taskId } = await deployAutomationAccount(
+			consoleKit,
+			provider,
+			userWallet,
+			userEoaAddress,
+			parseInt(env.CHAIN_ID),
+			precomputeData,
+			env.EXECUTOR_REGISTRY_ID,
+			AutomationSubscriptionParams
+		)
+
+		console.log('[Deploy] Deployment initiated with task ID:', taskId)
+
+		// 3. Poll for deployment status
+		console.log('[Deploy] Polling for deployment status...')
+		const taskData = await pollDeploymentStatus(consoleKit, taskId, parseInt(env.CHAIN_ID))
+
+		console.log('[Deploy] Deployment complete:', taskData)
+
+		if (taskData.status === 'successful' && taskData.outputTransactionHash) {
+			console.log('[Deploy] Successfully deployed Brahma account')
+			console.log('[Deploy] Transaction hash:', taskData.outputTransactionHash)
+		} else {
+			throw new Error(`Deployment failed with status: ${taskData.status}`)
+		}
+	} catch (error) {
+		console.error('[Deploy] Error:', error)
+		process.exit(1)
+	}
+}
+
+// Run the deployment
+main().catch((error) => {
+	console.error('[Deploy] Fatal error:', error)
+	process.exit(1)
+})
 
 export interface AutomationSubscriptionParams {
 	inputToken: Address
