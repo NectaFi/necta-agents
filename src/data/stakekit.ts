@@ -143,6 +143,7 @@ export async function getMarketData(chainConfig: { name: string }): Promise<Mark
 		.sort((a, b) => b.apy - a.apy)
 		.map((yieldData) => ({
 			name: `${yieldData.metadata.provider.name} ${yieldData.token.symbol}`,
+			address: yieldData.metadata.provider.id,
 			metrics: {
 				apy: yieldData.apy * 100,
 				volumeUsd1d: yieldData.metadata.provider.tvl || '0',
@@ -190,6 +191,7 @@ export async function getPositionData(
 					)
 					.map((yieldData) => ({
 						name: yieldData.metadata.provider.name,
+						address: yieldData.metadata.provider.id,
 						metrics: {
 							apy: yieldData.apy * 100,
 							volumeUsd1d: yieldData.metadata.provider.tvl || '0',

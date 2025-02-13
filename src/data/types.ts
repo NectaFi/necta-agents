@@ -21,6 +21,7 @@ export interface YieldMetrics {
 
 export interface YieldOpportunity {
 	name: string
+	address: string
 	metrics: YieldMetrics
 }
 
