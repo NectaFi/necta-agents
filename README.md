@@ -13,6 +13,14 @@ Necta Agents is an AI-powered DeFi automation system that:
 
 ## System Architecture 🏗️
 
+### Architectural Diagram
+
+![Architecture](./architecture.png)
+
+### User Flow Diagram
+
+![User Flow](./user-flow.png)
+
 The system consists of three main AI agents working together:
 
 1. **Sentinel Agent**: Market analysis and opportunity detection
@@ -43,10 +51,6 @@ The system consists of three main AI agents working together:
 
     - Market Data: Stakekit for Protocol yields and token prices
     - Wallet Status: Account balances and positions
-
-### Architectural Diagram
-
-![Architectural Diagram](./docs/images/necta-agents-arch.png)
 
 3. Onchain Execution: Brahma ConsoleKit
 
