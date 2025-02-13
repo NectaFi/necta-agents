@@ -1,67 +1,154 @@
-# Necta Core Agents
+# 🤖 Necta Agents
 
-A multi-agent system for autonomous DeFi operations, built for the Safe Agentaton.
+An autonomous multi-agent DeFi system for yield optimization and portfolio management, built on Arbitrum. Powered by Bun, Hono, Vercel AI SDK, OpenAI, Brahma's ConsoleKit, Safe Smart Account, Supabase, Stakekit Viem, and more.
 
-## Architecture
+## Overview 📚
 
-The system consists of three main agents:
+Necta Agents is an AI-powered DeFi automation system that:
+
+-   Monitors market conditions and wallet status
+-   Identifies optimal yield opportunities to maximize returns
+-   Executes transactions securely through Brahma accounts (powered by Safe Smart Account)
+-   Operates autonomously with no human intervention required
+
+## System Architecture 🏗️
+
+The system consists of three main AI agents working together:
 
 1. **Sentinel Agent**: Market analysis and opportunity detection
-2. **Curator Agent**: Decision making and strategy formulation
-3. **Executor Agent**: Transaction execution and safety verification
 
-## Core Components
+    - Monitors market conditions
+    - Tracks wallet status
+    - Generates intelligence reports
 
--   **Agent System**: Multi-agent system
--   **Event Bus**: Inter-agent communication system
--   **Data Layer**: Data sources for market data fetching
--   **Memory System**: Persistent storage with Supabase
--   **Chain Configuration**: Multi-chain support system
--   **System Prompt**: Agent behaviour definitions
--
+2. **Curator Agent**: Strategy formulation and task generation
 
-## Setup
+    - Analyzes Sentinel reports
+    - Determines optimal actions
+    - Curates executable tasks
 
-1. Install dependencies:
+3. **Executor Agent**: Secure transaction execution
+    - Processes tasks into transactions
+    - Executes via Brahma ConsoleKit
+    - Verifies transaction success
+
+### Core Components
+
+1. **Infrastructure**
+
+    - Event Bus: Inter-agent communication system
+    - Memory System: Supabase for persistent storage
+
+2. **Data Sources**
+
+    - Market Data: Stakekit for Protocol yields and token prices
+    - Wallet Status: Account balances and positions
+
+### Architectural Diagram
+
+![Architectural Diagram](./docs/images/necta-agents-arch.png)
+
+3. Onchain Execution: Brahma ConsoleKit
+
+## Quick Start 🚀
+
+### Prerequisites
+
+-   Hono
+-   Bun
+-   Supabase account
+-   ConsoleKit API key
+-   OpenAI API key
+-   Vercel AI SDK
+-   Brahma ConsoleKit
+-   Safe Smart Account
+-   Stakekit API key
+
+### Installation
+
+1. Clone and install:
 
 ```bash
+git clone https://github.com/NectaFi/necta-agents.git
+cd necta-agents
 bun install
 ```
 
-2. Set up environment variables:
+2. Configure environment:
 
 ```bash
 cp .env.example .env
 ```
 
-Fill in the required API keys and configuration.
+### Setup Steps
 
-3. Register Executor (Gasless):
+1. **Register Executor (Gasless)**
 
 ```bash
 ENABLE_AGENTS=true bun src/index.ts
 ```
 
-This will register your executor with ConsoleKit. The registration is gasless.
+2. **Create Brahma Account**
 
-4. Create Brahma Account (Manual Steps):
+    - Visit [Console.fi](https://dev.console.fi)
+    - Connect wallet (same as executor)
+    - Create Brahma account
+    - Create subscription with registered executor
+    - Fund account with USDC
 
-    1. Visit https://dev.console.fi
-    2. Connect your wallet (same as executor wallet)
-    3. Create a new Brahma account
-    4. Create a subscription with your registered executor
-    5. Fund the account with at least 1 USDC for testing
+3. **Add Brahma Account**
 
-5. Add your Brahma account address to `.env`:
-
-```
+```env
 BRAHMA_ACCOUNT_ADDRESS="0x..."
 ```
 
-## Important Notes
+## Security 🛡️
 
--   Executor registration is completely gasless
--   Brahma account deployment requires funds
--   Keep at least 1 USDC in the Brahma account for testing
--   All funds in the Brahma account remain fully owned by you
--   Transaction relaying for automations is currently free
+-   Non-custodial: All funds remain in Brahma account
+-   Secure execution: ConsoleKit handles transaction security
+-   Limited permissions: Executor only signs transaction data
+-   Transaction simulation: All transactions are simulated before execution
+
+## Development Guide 🛠️
+
+### Project Structure
+
+```
+src/
+├── agents/             # Agent implementations
+├── services/           # External services integration
+├── system-prompts/     # Agent behavior definitions
+├── data/              # Data fetching and processing
+├── comms/             # Inter-agent communication
+└── config/            # Chain and protocol configs
+```
+
+### Key Files
+
+-   `src/agents/index.ts`: Agent system initialization
+-   `src/services/console-kit/`: ConsoleKit integration
+-   `src/system-prompts/`: Agent behavior definitions
+-   `src/data/`: Market data and protocol integrations
+
+### Adding New Features
+
+1. **Extend Agent Capabilities**
+
+    - Add tools in agent's toolkit
+    - Update system prompts
+    - Register new event handlers
+
+2. **Add Protocol Support**
+    - Add protocol addresses
+    - Implement data fetching
+    - Update transaction building
+
+## Contributing 🤝
+
+## License 📄
+
+MIT License - See [LICENSE](LICENSE) for details
+
+## Disclaimer ⚠️
+
+This code is provided as-is with no guarantees. Not audited. Use at your own risk. Not financial advice.
