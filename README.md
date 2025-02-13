@@ -119,12 +119,46 @@ BRAHMA_ACCOUNT_ADDRESS="0x..."
 
 ```
 src/
-├── agents/             # Agent implementations
-├── services/           # External services integration
-├── system-prompts/     # Agent behavior definitions
-├── data/              # Data fetching and processing
-├── comms/             # Inter-agent communication
-└── config/            # Chain and protocol configs
+├── agents/                    # Agent implementations
+│   ├── agent.ts              # Base agent class
+│   ├── index.ts              # Agent system initialization
+│   ├── curator/              # Curator agent
+│   │   ├── index.ts
+│   │   └── toolkit.ts
+│   ├── executor/             # Executor agent
+│   │   ├── index.ts
+│   │   └── toolkit.ts
+│   └── sentinel/             # Sentinel agent
+│       ├── index.ts
+│       └── toolkit.ts
+├── services/                 # External services integration
+│   └── console-kit/          # ConsoleKit integration
+│       ├── index.ts
+│       ├── core-actions.ts
+│       ├── deploy-automation-account.ts
+│       ├── register-executor.ts
+│       ├── types.ts
+│       └── utils.ts
+├── system-prompts/          # Agent behavior definitions
+│   ├── index.ts
+│   ├── curator-system-prompt.ts
+│   ├── executor-system-prompt.ts
+│   └── sentinel-system-prompt.ts
+├── data/                    # Data fetching and processing
+│   ├── index.ts
+│   ├── stakekit.ts
+│   ├── stakekit.test.ts
+│   └── types.ts
+├── comms/                   # Inter-agent communication
+│   ├── index.ts
+│   └── event-bus.ts
+├── config/                  # Chain and protocol configs
+│   ├── index.ts
+│   └── chains.ts
+├── app.ts                   # Hono app setup
+├── env.ts                   # Environment configuration
+├── index.ts                # Main entry point
+└── setup.ts                # System initialization
 ```
 
 ### Key Files
