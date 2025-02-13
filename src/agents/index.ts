@@ -5,16 +5,21 @@ import { SentinelAgent } from './sentinel'
 import { CuratorAgent } from './curator'
 import figlet from 'figlet'
 
+interface AgentAccounts {
+	executor: Account
+	brahma: `0x${string}`
+}
+
 /**
  * Registers the agents and returns them
  * @returns The registered agents
  */
-export const registerAgents = (eventBus: EventBus, account: Account) => {
+export const registerAgents = (eventBus: EventBus, accounts: AgentAccounts) => {
 	console.log(figlet.textSync('NECTA'))
 	console.log('======== Registering agents =========')
 	// initialize the agents
 	console.log(`[registerAgents] initializing executor agent...`)
-	const executorAgent = new ExecutorAgent('executor', eventBus, account)
+	const executorAgent = new ExecutorAgent('executor', eventBus, accounts.executor)
 	console.log(`[registerAgents] executor agent initialized.`)
 	console.log(`[registerAgents] initializing sentinel agent...`)
 	const sentinelAgent = new SentinelAgent('sentinel', eventBus)

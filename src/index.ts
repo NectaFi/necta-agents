@@ -9,8 +9,13 @@ if (!consoleKit.isRegistered()) {
 
 // Only start agents if explicitly enabled
 if (env.ENABLE_AGENTS) {
+	if (!env.BRAHMA_ACCOUNT_ADDRESS) {
+		console.log(`[⚠️] BRAHMA_ACCOUNT_ADDRESS not set. Please set it in .env`)
+		process.exit(1)
+	}
 	console.log(`[🚀] Starting autonomous agent system...`)
-	sentinelAgent.start(account.address as `0x${string}`)
+	console.log(`[ℹ️] Monitoring Brahma account: ${env.BRAHMA_ACCOUNT_ADDRESS}`)
+	sentinelAgent.start(env.BRAHMA_ACCOUNT_ADDRESS as `0x${string}`)
 } else {
 	console.log(`[ℹ️] Agent system is disabled. Set ENABLE_AGENTS=true to enable.`)
 }
