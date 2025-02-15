@@ -177,4 +177,6 @@ dist
 package-lock.json
 .vscode/
 
-# /prompts/
+/prompts/
+
+TODO/
