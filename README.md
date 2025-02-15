@@ -181,6 +181,10 @@ src/
     - Implement data fetching
     - Update transaction building
 
+# Frontend
+
+[Necta App](https://github.com/NectaFi/necta-app)
+
 ## Contributing 🤝
 
 ## License 📄
