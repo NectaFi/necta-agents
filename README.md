@@ -1,15 +1,16 @@
 # 🤖 Necta Agents
 
-An autonomous multi-agent DeFi system for yield optimization and portfolio management, built on Arbitrum. Powered by Bun, Hono, Vercel AI SDK, OpenAI, Brahma's ConsoleKit, Safe Smart Account, Supabase, Stakekit Viem, and more.
+NectaFi is an autonomous, multi-agent DeFi system that automates stablecoin yield optimization and portfolio management, built on Base. It is powered by Bun, Hono, the Vercel AI SDK, OpenAI, Stakekit, Brahma's ConsoleKit, Safe Smart Account, Supabase, and more.
 
 ## Overview 📚
 
-Necta Agents is an AI-powered DeFi automation system that:
+Overview 📚
+Necta Agents is an AI-powered DeFi yield automation system that:
 
--   Monitors market conditions and wallet status
--   Identifies optimal yield opportunities to maximize returns
--   Executes transactions securely through Brahma accounts (powered by Safe Smart Account)
--   Operates autonomously with no human intervention required
+-   **Continuously monitors** market conditions and wallet status through **Stakekit APIs**
+-   **Identifies optimal yield opportunities** to maximize returns using **Stakekit's real-time yield data**
+-   **Executes transactions securely** through **Brahma accounts** (powered by **Safe Smart Account**)
+-   **Operates autonomously** with no human intervention required
 
 ## System Architecture 🏗️
 
