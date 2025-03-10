@@ -15,7 +15,7 @@ export const envSchema = z
 		STAKEKIT_API_KEY: z.string(),
 		CHAIN_ID: z
 			.string()
-			.default('42161')
+			.default('8453')
 			.refine(
 				(val) => validateChainId(parseInt(val)),
 				'Chain ID not supported or not enabled'
