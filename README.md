@@ -50,7 +50,7 @@ The system consists of three main AI agents working together:
 
 2. **Data Sources**
 
-    - Market Data: Stakekit for Protocol yields and token prices
+    - Market Data: Uses Stakekit yield API for Protocol yields
     - Wallet Status: Account balances and positions
 
 3. Onchain Execution: Brahma ConsoleKit
@@ -147,8 +147,8 @@ src/
 │   └── sentinel-system-prompt.ts
 ├── data/                    # Data fetching and processing
 │   ├── index.ts
-│   ├── stakekit.ts
-│   ├── stakekit.test.ts
+│   ├── stakekit.ts         # Stakekit Integration
+│   ├── stakekit.test.ts    # Stakekit Integration test
 │   └── types.ts
 ├── comms/                   # Inter-agent communication
 │   ├── index.ts
@@ -167,7 +167,7 @@ src/
 -   `src/agents/index.ts`: Agent system initialization
 -   `src/services/console-kit/`: ConsoleKit integration
 -   `src/system-prompts/`: Agent behavior definitions
--   `src/data/`: Market data and protocol integrations
+-   `src/data/`: Stakekit Market data and protocol integrations
 
 ### Adding New Features
 
